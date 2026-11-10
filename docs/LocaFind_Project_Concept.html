@@ -167,6 +167,7 @@
 <ul>
   <li>The reporter updates a report from their Profile: mark a found item "Surrendered to Campus Security", or close a report as "Returned" / "I got it back".</li>
   <li>Statuses: Active (Lost or Found), Surrendered to Campus Security, and Recovered/Closed. Closed reports leave the map.</li>
+  <li>A report posted by mistake can be deleted from the Profile after a confirmation; it is removed from the database for everyone.</li>
 </ul>
 
 <!-- ======================= 5 ======================= -->
@@ -235,7 +236,7 @@
     <tr><td>Location</td><td>@capacitor/geolocation</td><td>Live position for the radar and avatar; starting point for report pins</td></tr>
     <tr><td>Haptics</td><td>@capacitor/haptics</td><td>Vibration when the student enters a missing item's perimeter</td></tr>
     <tr><td>Map</td><td>Leaflet + OpenStreetMap tiles</td><td>Free, no API key; draws the ground, campus outline, and perimeters</td></tr>
-    <tr><td>Data</td><td>Angular HttpClient + PHP + MySQL (XAMPP)</td><td>Same pattern as the class students.php lesson: GET, POST, and PUT with JSON</td></tr>
+    <tr><td>Data</td><td>Angular HttpClient + PHP + MySQL (XAMPP)</td><td>Same pattern as the class students.php lesson: full CRUD (GET, POST, PUT, DELETE) with JSON</td></tr>
   </tbody>
 </table>
 <h3>Camera</h3>
@@ -245,7 +246,7 @@
 <h3>Interactive 3D Map</h3>
 <p>Leaflet draws the ground (tiles, campus outline, and perimeters) on a map element tilted with a CSS perspective transform. Items, towers, and the avatar are upright elements in a flat layer on top, placed every frame by projecting their map position through the same transform and scaled by distance. Taps on the ground are converted back to map coordinates by inverting the projection. The map clearly communicates that a marker is a user-reported location, not live tracking of the physical item.</p>
 <h3>Data / API</h3>
-<p>The backend is one procedural PHP file (api/reports.php) with PDO and a MySQL reports table, following the instructor's students.php example: JSON responses shaped { success, data }, a CORS allow-list, and validation with 400, 404, 405, and 422 status codes. The app uses GET to load reports, POST to submit a report, and PUT to change a report's status or custody. Reports are closed, never deleted. If the server cannot be reached, the app switches to offline mode: it shows sample reports and saves new reports on the phone only.</p>
+<p>The backend is one procedural PHP file (api/reports.php) with PDO and a MySQL reports table, following the instructor's students.php example: JSON responses shaped { success, data }, a CORS allow-list, and validation with 400, 404, 405, and 422 status codes. The app covers full CRUD: GET to load reports, POST to submit a report, PUT to change a report's status or custody, and DELETE to remove a report posted by mistake. Closing a report keeps it as a record, while deleting removes it for good. If the server cannot be reached, the app switches to offline mode: it shows sample reports and saves new reports on the phone only.</p>
 
 <!-- ======================= 9 ======================= -->
 <h2>9. Data Fields</h2>
@@ -275,7 +276,7 @@
   <li>Report lost item and report found item, with camera, geolocation, and manual pin adjustment</li>
   <li>Proximity reveal (Far, Near, In range), Nearby panel, surrender points, and vibration alert</li>
   <li>Browse with search and filters; bird's-eye view with building labels</li>
-  <li>GET, POST, and PUT through HttpClient to the PHP + MySQL API, with an offline fallback</li>
+  <li>Full CRUD (GET, POST, PUT, DELETE) through HttpClient to the PHP + MySQL API, with an offline fallback</li>
   <li>Profile with avatar, display name, achievements, and report status updates</li>
   <li>Demo mode for testing away from campus (tap the map to walk)</li>
 </ul>
@@ -311,7 +312,7 @@
   <tbody>
     <tr><td>Problem identification and relevance (15 points)</td><td>Replaces asking the guards and relying on group chats with one shared, map-based lost-and-found for the NEUST Sumacab campus.</td></tr>
     <tr><td>Technical implementation and mobile features (25 points)</td><td>Capacitor Camera with preview and retake; Capacitor Geolocation with live tracking; Haptics; Leaflet map tilted in 3D with perimeters, sprites, and a bird's-eye view.</td></tr>
-    <tr><td>Functionality and data handling (20 points)</td><td>GET, POST, and PUT through Angular HttpClient to a PHP + MySQL REST API, with validation, error handling, and an offline fallback.</td></tr>
+    <tr><td>Functionality and data handling (20 points)</td><td>Full CRUD (GET, POST, PUT, DELETE) through Angular HttpClient to a PHP + MySQL REST API, with validation, error handling, and an offline fallback.</td></tr>
     <tr><td>Usability and user experience (15 points)</td><td>Labelled bottom navigation, always-visible legend, locked and unlocked cards, clear form validation, permission and offline messages, and a friendly avatar.</td></tr>
     <tr><td>Understanding of code and responsible AI use (15 points)</td><td>Explain the perimeter and distance logic, the camera flow, the 3D projection, and the HTTP service; review and test AI-assisted code and disclose AI assistance.</td></tr>
     <tr><td>Documentation and presentation (10 points)</td><td>A 3–5 page PDF report, an 8–12 minute recorded walkthrough, an installable Android APK, and source code with setup instructions.</td></tr>
@@ -334,6 +335,7 @@
     <tr><td>Open the bird's-eye view</td><td>Whole campus with building labels; drag to look around; Back returns</td><td></td><td></td></tr>
     <tr><td>Choose an avatar and name</td><td>Avatar and portrait update; it faces the direction it walks</td><td></td><td></td></tr>
     <tr><td>Mark a report recovered</td><td>Status changes in MySQL; report leaves the map; badges update</td><td></td><td></td></tr>
+    <tr><td>Delete a report</td><td>Confirmation appears; the report disappears from the map, Profile, and MySQL</td><td></td><td></td></tr>
     <tr><td>Server unreachable</td><td>Offline notice and sample reports; no blank screen</td><td></td><td></td></tr>
     <tr><td>Demo mode off campus</td><td>Tapping the ground walks the avatar there; unlocks happen on arrival</td><td></td><td></td></tr>
   </tbody>

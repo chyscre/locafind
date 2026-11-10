@@ -40,3 +40,9 @@
 :root {
   --ion-font-family: 'Fredoka', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* Red "Delete" button in confirmation alerts */
+.alert-button.pf-alert-danger {
+  color: var(--ion-color-danger, #c5000f) !important;
+  font-weight: 700;
+}

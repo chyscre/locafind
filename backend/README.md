@@ -34,8 +34,9 @@ All requests go to `api/reports.php`.
 | GET | `/api/reports.php?id=1` | Get one report |
 | POST | `/api/reports.php` | Create a lost or found report |
 | PUT | `/api/reports.php?id=1` | Change `status` and/or `custody` |
+| DELETE | `/api/reports.php?id=1` | Delete a report for good |
 
-Reports are never deleted; closing a report sets `status` to `recovered`.
+Closing a report (`status` = `recovered`) keeps it as a record; DELETE removes it for good (for reports posted by mistake).
 
 Example POST body (`Content-Type: application/json`):
 
@@ -60,7 +61,7 @@ Example PUT body: `{ "status": "recovered" }` or `{ "custody": "security" }`.
 
 ## Status codes
 
-`200` OK · `201` created · `400` bad request · `404` not found · `405` method not allowed ·
+`200` OK (GET, PUT, DELETE) · `201` created · `400` bad request · `404` not found · `405` method not allowed ·
 `422` validation failed · `500` server/database error.
 
 ## Using it from the phone

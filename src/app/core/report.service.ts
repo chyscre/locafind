@@ -147,6 +147,22 @@ export class ReportService {
     }
   }
 
+  // ---------- DELETE ----------
+
+  /** Remove a report for good (e.g. posted by mistake). Closing it keeps a record instead. */
+  async remove(id: string): Promise<void> {
+    const isLocal = id.startsWith('local-') || id.startsWith('sample-') || id.startsWith('test-');
+    if (!isLocal) {
+      await firstValueFrom(
+        this.http.delete<ApiResponse<null>>(`${this.endpoint}?id=${encodeURIComponent(id)}`).pipe(timeout(TIMEOUT_MS)),
+      );
+    }
+    this.reports.update((list) => list.filter((r) => r.id !== id));
+    if (id.startsWith('local-')) writeJson(LOCAL_KEY, this.localReports().filter((r) => r.id !== id));
+    this.myIds.update((ids) => ids.filter((x) => x !== id));
+    writeJson(MY_IDS_KEY, this.myIds());
+  }
+
   // ---------- test items (for testing anywhere, e.g. at home) ----------
 
   readonly hasTestItems = computed(() => this.reports().some((r) => r.id.startsWith('test-')));

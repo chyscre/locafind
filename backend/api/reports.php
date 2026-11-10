@@ -22,7 +22,7 @@ if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
     header('Vary: Origin');
 }
 
-header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -241,9 +241,24 @@ try {
 
             respond(200, ['success' => true, 'message' => 'Report updated.', 'data' => find_report($pdo, $id)]);
 
+        case 'DELETE':
+            // Removes a report for good (e.g. posted by mistake). Closing a report with
+            // PUT { "status": "recovered" } keeps it as a record instead.
+            if ($id === null || $id === false) {
+                respond(400, ['success' => false, 'message' => 'Provide a report id in the query string, e.g. ?id=1.']);
+            }
+
+            $stmt = $pdo->prepare('DELETE FROM reports WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+
+            if ($stmt->rowCount() === 0) {
+                respond(404, ['success' => false, 'message' => 'Report not found.']);
+            }
+
+            respond(200, ['success' => true, 'message' => 'Report deleted.']);
+
         default:
-            // Reports are closed (status = recovered), never deleted.
-            header('Allow: GET, POST, PUT, OPTIONS');
+            header('Allow: GET, POST, PUT, DELETE, OPTIONS');
             respond(405, ['success' => false, 'message' => 'Method not allowed.']);
     }
 } catch (PDOException $e) {

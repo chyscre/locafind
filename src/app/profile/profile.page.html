@@ -112,16 +112,19 @@
           @if (r.type === 'found' && r.custody) {
             <small>{{ custodyLabel[r.custody] }}</small>
           }
-          @if (r.status === 'active') {
-            <div class="pf-report-actions">
+          <div class="pf-report-actions">
+            @if (r.status === 'active') {
               @if (r.type === 'found' && r.custody === 'with_finder') {
                 <ion-button size="small" fill="outline" shape="round" (click)="markSurrendered(r)">Surrendered</ion-button>
               }
               <ion-button size="small" shape="round" (click)="markRecovered(r)">
                 {{ r.type === 'lost' ? 'I got it back' : 'Returned' }}
               </ion-button>
-            </div>
-          }
+            }
+            <ion-button size="small" fill="clear" color="danger" shape="round" (click)="deleteReport(r)" aria-label="Delete report">
+              <ion-icon slot="start" name="trash"></ion-icon>Delete
+            </ion-button>
+          </div>
         </div>
       </div>
     } @empty {

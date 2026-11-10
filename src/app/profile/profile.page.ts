@@ -162,6 +162,25 @@ export class ProfilePage implements OnInit {
     await alert.present();
   }
 
+  async deleteReport(r: Report): Promise<void> {
+    const alert = await this.alerts.create({
+      header: 'Delete this report?',
+      message: `"${r.name}" will be removed for good, for everyone. If the item was found or returned, use "I got it back" or "Returned" instead to keep a record.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          cssClass: 'pf-alert-danger',
+          handler: () => {
+            void this.run(() => this.reports.remove(r.id), 'Report deleted.');
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
   private async run(action: () => Promise<void>, done: string): Promise<void> {
     let message = done;
     try {
