@@ -1,0 +1,1371 @@
+// Global on purpose (ViewEncapsulation.None): Leaflet and the sprite layer create elements
+// outside Angular. Everything is prefixed with lf- (map) or av- (avatar).
+
+app-map {
+  --lf-yellow: #ffc400;
+  --lf-blue: #1a73e8;
+  --lf-lost: #64748b;
+  --lf-found: #16a34a;
+  --lf-pin: #e11d48;
+  --lf-tower: #7c3aed;
+  --lf-surface: #ffffff;
+  --lf-text: #0f172a;
+  --lf-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+}
+
+// ================= 3D stage =================
+
+.lf-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #8fd18a; // ground colour while tiles load
+  touch-action: none;
+  user-select: none;
+}
+
+// The ground: a big square Leaflet map tilted away from the camera (size and transform set in code).
+.lf-map {
+  position: absolute;
+  transform-origin: 50% 50%;
+  background: #9bd89a;
+
+  // Brighter, greener, game-like tint over the OpenStreetMap tiles.
+  .leaflet-tile-pane {
+    filter: saturate(1.7) hue-rotate(-14deg) brightness(1.08) contrast(0.92);
+  }
+}
+
+.lf-sky {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 30%;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #5fb4f5 0%, #8fd0ff 55%, rgba(205, 238, 255, 0.95) 82%, rgba(220, 245, 255, 0) 100%);
+}
+
+.lf-cloud {
+  position: absolute;
+  height: 34px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  filter: blur(1px);
+  animation: lf-drift 60s linear infinite;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 10px;
+    border-radius: 50%;
+    background: inherit;
+  }
+
+  &::before {
+    left: 18%;
+    width: 46%;
+    height: 40px;
+  }
+
+  &::after {
+    left: 48%;
+    width: 36%;
+    height: 30px;
+  }
+}
+
+.lf-cloud--a { top: 18%; left: -10%; width: 150px; }
+.lf-cloud--b { top: 34%; left: 40%; width: 110px; animation-duration: 80s; opacity: 0.8; }
+.lf-cloud--c { top: 8%; left: 75%; width: 130px; animation-duration: 70s; }
+
+@keyframes lf-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(60vw); }
+}
+
+// ================= ground layers (inside the tilted map) =================
+
+.lf-outside {
+  stroke: none;
+  fill: #0f3d2e;
+  fill-opacity: 0.28;
+}
+
+.lf-campus {
+  stroke: #fef08a;
+  stroke-width: 4;
+  stroke-opacity: 0.9;
+  fill: none;
+}
+
+.lf-perimeter {
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+  fill: var(--lf-lost);
+  fill-opacity: 0.12;
+}
+
+.lf-perimeter--near {
+  stroke: var(--lf-yellow);
+  stroke-width: 3;
+  fill: var(--lf-yellow);
+  fill-opacity: 0.18;
+}
+
+.lf-perimeter--inRange {
+  stroke: var(--lf-pin);
+  stroke-width: 3;
+  stroke-dasharray: none;
+  fill: var(--lf-pin);
+  fill-opacity: 0.15;
+}
+
+// The player's 100 m detection range.
+.lf-range {
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-opacity: 0.7;
+  fill: #ffffff;
+  fill-opacity: 0.07;
+}
+
+.lf-range--alert {
+  stroke: var(--lf-yellow);
+  stroke-width: 3;
+  stroke-opacity: 1;
+  stroke-dasharray: 10 8;
+  fill: var(--lf-yellow);
+  fill-opacity: 0.1;
+}
+
+// Ripples spreading from the player's feet.
+.lf-pulse {
+  stroke: #ffffff;
+  stroke-width: 3;
+  fill: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lf-ripple 2.4s ease-out infinite;
+}
+
+.lf-pulse--b {
+  animation-delay: 1.2s;
+}
+
+@keyframes lf-ripple {
+  from { transform: scale(0.15); opacity: 0.95; }
+  to { transform: scale(1); opacity: 0; }
+}
+
+// ================= sprites (upright, flat layer) =================
+
+.lf-sprites {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+// A sprite's origin is its point on the ground; the body stands on it.
+.lf-sprite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.lf-body {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.lf-body--orb,
+.lf-body--pin { width: 56px; height: 72px; }
+.lf-body--crate { width: 56px; height: 66px; }
+.lf-body--tower { width: 64px; height: 104px; }
+.lf-body--avatar { width: 64px; height: 96px; }
+
+.lf-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 30px;
+  height: 9px;
+  margin-left: -15px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.3);
+  animation: lf-shadow-pulse 2.2s ease-in-out infinite;
+}
+
+.lf-shadow--pin {
+  animation: none;
+}
+
+@keyframes lf-shadow-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50% { transform: scale(0.7); opacity: 0.2; }
+}
+
+// Mystery orb (lost item, not yet in range)
+.lf-orb {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 26px;
+  background: radial-gradient(circle at 35% 30%, #e2e8f0, var(--lf-lost) 60%, #334155);
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+  animation: lf-float 2.2s ease-in-out infinite;
+}
+
+.lf-orb--far {
+  opacity: 0.6;
+}
+
+.lf-orb--near {
+  background: radial-gradient(circle at 35% 30%, #fff7c2, var(--lf-yellow) 55%, #b45309);
+  color: #422006;
+  animation: lf-float 1.2s ease-in-out infinite, lf-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes lf-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+@keyframes lf-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 196, 0, 0.85); }
+  50% { box-shadow: 0 0 0 16px rgba(255, 196, 0, 0); }
+}
+
+// Unlocked pin (inside the perimeter)
+.lf-pin {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: linear-gradient(135deg, #fb7185, var(--lf-pin));
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lf-drop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  ion-icon {
+    transform: rotate(45deg);
+    color: #fff;
+    font-size: 22px;
+  }
+}
+
+@keyframes lf-drop {
+  from { transform: translateY(-30px) rotate(-45deg) scale(0.6); opacity: 0; }
+  to { transform: rotate(-45deg); opacity: 1; }
+}
+
+// Found item: a supply crate
+.lf-crate {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  width: 44px;
+  height: 40px;
+  margin-left: -22px;
+  border-radius: 10px;
+  background: linear-gradient(#22c55e, var(--lf-found));
+  border: 3px solid #fff;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: lf-float 2.6s ease-in-out infinite;
+
+  ion-icon {
+    color: #fff;
+    font-size: 22px;
+    margin-top: 6px;
+  }
+}
+
+.lf-crate-lid {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 11px;
+  background: rgba(255, 255, 255, 0.35);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.75);
+}
+
+// Surrender point: a security beacon tower
+.lf-tower-beam {
+  position: absolute;
+  left: 50%;
+  bottom: 60px;
+  width: 16px;
+  height: 140px;
+  margin-left: -8px;
+  background: linear-gradient(to top, rgba(167, 139, 250, 0.75), rgba(167, 139, 250, 0));
+  filter: blur(2px);
+  animation: lf-beam 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes lf-beam {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.lf-tower-base {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 58px;
+  height: 16px;
+  margin-left: -29px;
+  border-radius: 50%;
+  background: linear-gradient(#ddd6fe, #a78bfa);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.6);
+  animation: lf-beacon 2s ease-out infinite;
+}
+
+@keyframes lf-beacon {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.7); }
+  100% { box-shadow: 0 0 0 18px rgba(124, 58, 237, 0); }
+}
+
+.lf-tower-pole {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 10px;
+  height: 52px;
+  margin-left: -5px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #6d28d9, #c4b5fd, #6d28d9);
+}
+
+.lf-tower-top {
+  position: absolute;
+  left: 50%;
+  bottom: 54px;
+  width: 42px;
+  height: 42px;
+  margin-left: -21px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ddd6fe, var(--lf-tower) 65%);
+  border: 3px solid #fff;
+  box-shadow: 0 0 18px rgba(124, 58, 237, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lf-float 3s ease-in-out infinite;
+
+  ion-icon {
+    color: #fff;
+    font-size: 22px;
+  }
+}
+
+// ================= the explorer =================
+
+.lf-avatar-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 40px;
+  height: 12px;
+  margin-left: -20px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.lf-avatar-fig {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 2px rgba(15, 23, 42, 0.35));
+  animation: av-bob 2.4s ease-in-out infinite;
+
+  .av {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+// Facing: front (toward the camera), back (walking away), or turned to a side.
+.lf-avatar-turn {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  transition: transform 0.25s ease-out;
+
+  > div {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.lf-view-back {
+  display: none;
+}
+
+.lf-face-back {
+  .lf-view-front { display: none; }
+  .lf-view-back { display: block; }
+}
+
+// Sides: the front view turned and squeezed a little, so it reads as walking sideways.
+.lf-face-left .lf-avatar-turn {
+  transform: perspective(160px) rotateY(-38deg) scaleX(0.92);
+}
+
+.lf-face-right .lf-avatar-turn {
+  transform: perspective(160px) rotateY(38deg) scaleX(0.92);
+}
+
+@keyframes av-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.av-leg,
+.av-arm {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+
+.lf-walking .lf-avatar-fig {
+  animation: av-hop 0.45s ease-in-out infinite;
+}
+
+.lf-walking .av-leg-l,
+.lf-walking .av-arm-r {
+  animation: av-swing 0.45s ease-in-out infinite alternate;
+}
+
+.lf-walking .av-leg-r,
+.lf-walking .av-arm-l {
+  animation: av-swing 0.45s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes av-swing {
+  from { transform: rotate(-24deg); }
+  to { transform: rotate(24deg); }
+}
+
+@keyframes av-hop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+// ================= top =================
+
+.lf-top {
+  position: absolute;
+  top: calc(var(--ion-safe-area-top, 0px) + 12px);
+  left: 12px;
+  right: 12px;
+  z-index: 1100;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+
+  > *,
+  .lf-top-left > * {
+    pointer-events: auto;
+  }
+}
+
+.lf-top-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  pointer-events: none !important;
+}
+
+// Profile chip (top left): avatar + name, opens the Profile tab.
+.lf-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 3px 14px 3px 3px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  color: #fff;
+  box-shadow: var(--lf-shadow);
+  font-family: inherit;
+  text-align: left;
+}
+
+.lf-chip-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+
+  strong {
+    font-size: 15px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+  }
+
+  small {
+    font-size: 11px;
+    opacity: 0.85;
+  }
+}
+
+.lf-note {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--lf-text);
+  box-shadow: var(--lf-shadow);
+}
+
+.lf-note--warn {
+  border-left: 4px solid var(--ion-color-warning, #ffc409);
+}
+
+.lf-link {
+  background: none;
+  border: none;
+  padding: 0 0 0 6px;
+  color: var(--lf-blue);
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.lf-round {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--lf-text);
+  box-shadow: var(--lf-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  ion-icon {
+    font-size: 22px;
+  }
+}
+
+.lf-round--on {
+  background: var(--lf-yellow);
+  color: #111;
+}
+
+// Compass needle: red points north.
+.lf-needle {
+  position: relative;
+  width: 8px;
+  height: 30px;
+  transition: transform 0.15s;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+  }
+
+  &::before {
+    top: 0;
+    border-bottom: 15px solid #ef4444;
+  }
+
+  &::after {
+    bottom: 0;
+    border-top: 15px solid #94a3b8;
+  }
+}
+
+.lf-banner {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  z-index: 1150;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 48px);
+  padding: 12px 18px;
+  border-radius: 18px;
+  border: 3px solid #fff;
+  background: linear-gradient(135deg, #f59e0b, #e11d48);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  text-align: center;
+  box-shadow: var(--lf-shadow);
+  animation: lf-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+@keyframes lf-pop {
+  from { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+// Legend (top right): always visible, compact.
+.lf-legend {
+  flex: none;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 2px solid #fff;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--lf-text);
+  box-shadow: var(--lf-shadow);
+  font-size: 11.5px;
+  font-weight: 600;
+
+  > div {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 22px;
+
+    & + div {
+      margin-top: 3px;
+    }
+  }
+}
+
+.lf-mini {
+  position: relative !important;
+  left: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 11px !important;
+  border-width: 2px !important;
+  flex: none;
+  animation: none !important;
+
+  ion-icon {
+    font-size: 13px !important;
+    margin: 0 !important;
+  }
+}
+
+.lf-mini-pin {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  margin: 0 2px;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-width: 2px;
+  animation: none;
+
+  ion-icon {
+    font-size: 9px;
+  }
+}
+
+.lf-legend-tower {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lf-tower);
+  color: #fff;
+  font-size: 13px;
+}
+
+// ================= bottom HUD =================
+
+// Bottom left: explorer portrait + name; tapping it shows the Profile button above.
+.lf-hud-left {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.lf-portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--lf-text);
+  font-family: inherit;
+}
+
+.lf-portrait-name {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 0 #fff, 0 0 6px #fff;
+}
+
+.lf-head--lg {
+  width: 66px !important;
+  height: 66px !important;
+  border: 4px solid #fff !important;
+  box-shadow: var(--lf-shadow);
+}
+
+// ----- Explorer card (opened from the portrait) -----
+
+.lf-picker-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1290;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.lf-picker {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1300;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 18px 16px 16px;
+  border-radius: 24px;
+  border: 3px solid #fff;
+  background: linear-gradient(#e0f2fe, #ffffff 45%);
+  color: var(--lf-text);
+  box-shadow: var(--lf-shadow);
+  animation: lf-card-in 0.25s ease-out;
+
+  h2 {
+    margin: 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+  }
+}
+
+.lf-picker-stage {
+  width: 72px;
+  height: 108px;
+  margin: 4px auto;
+  animation: av-bob 2.4s ease-in-out infinite;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.lf-picker-options {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  justify-content: center;
+  gap: 4px 14px;
+  margin-bottom: 8px;
+}
+
+.lf-picker-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+
+  small {
+    font-size: 12px;
+  }
+}
+
+.lf-picker-option--on {
+  border-color: var(--lf-blue);
+  background: rgba(26, 115, 232, 0.08);
+}
+
+// The card is always light, so keep its input dark-on-light even in dark mode.
+.lf-picker-name {
+  --background: transparent;
+  --color: #0f172a;
+  --border-color: #cbd5e1;
+  color: #0f172a;
+  margin-bottom: 10px;
+
+  ion-input {
+    --color: #0f172a;
+    --placeholder-color: #64748b;
+    --placeholder-opacity: 1;
+  }
+}
+
+.lf-picker-actions {
+  display: flex;
+  gap: 8px;
+
+  ion-button {
+    flex: 1;
+    margin: 0;
+  }
+}
+
+// Bottom right column: Nearby, then the compass just below it.
+.lf-hud {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.lf-head {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #e0f2fe, #93c5fd);
+  border: 2px solid #fff;
+  flex: none;
+  display: block;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.lf-nearby {
+  color: var(--lf-text);
+}
+
+.lf-nearby-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 112px;
+  padding: 8px 12px;
+  border: 3px solid #fff;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  color: inherit;
+  box-shadow: var(--lf-shadow);
+  font-family: inherit;
+}
+
+.lf-nearby-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.lf-nearby-sils {
+  display: flex;
+  gap: 6px;
+  min-height: 30px;
+  align-items: center;
+}
+
+.lf-sil {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  ion-icon {
+    font-size: 18px;
+    color: #0f172a;
+  }
+}
+
+.lf-nearby--open {
+  width: min(320px, calc(100vw - 24px));
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+  border: 3px solid #fff;
+  border-radius: 20px;
+  background: var(--lf-surface);
+  box-shadow: var(--lf-shadow);
+}
+
+.lf-nearby-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.lf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font-size: 14px;
+  font-family: inherit;
+
+  ion-icon {
+    font-size: 22px;
+    color: #475569;
+    flex: none;
+  }
+}
+
+.lf-row-main {
+  flex: 1;
+}
+
+.lf-muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.lf-pad {
+  padding: 4px 14px;
+  margin: 0;
+}
+
+.lf-x {
+  border: none;
+  background: none;
+  color: inherit;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  ion-icon {
+    font-size: 22px;
+  }
+}
+
+.lf-attrib {
+  position: absolute;
+  right: 6px;
+  bottom: 2px;
+  z-index: 1050;
+  font-size: 9px;
+  color: rgba(15, 23, 42, 0.6);
+  pointer-events: none;
+}
+
+// ================= cards =================
+
+.lf-card {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + var(--ion-safe-area-bottom, 0px));
+  z-index: 1200;
+  max-height: 65vh;
+  overflow-y: auto;
+  padding: 16px;
+  border-radius: 24px;
+  border: 3px solid #fff;
+  background: var(--lf-surface);
+  color: var(--lf-text);
+  box-shadow: var(--lf-shadow);
+  animation: lf-card-in 0.25s ease-out;
+
+  h2 {
+    margin: 2px 0 4px;
+    font-size: 21px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0 0 10px;
+  }
+}
+
+@keyframes lf-card-in {
+  from { transform: translateY(24px); opacity: 0; }
+}
+
+.lf-card-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.lf-card-locked {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.lf-silhouette {
+  width: 76px;
+  height: 76px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e2e8f0, #cbd5e1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  ion-icon {
+    font-size: 42px;
+    color: #0f172a;
+    opacity: 0.85; // a dark silhouette: you know something is there, not what exactly
+  }
+}
+
+.lf-silhouette--tower {
+  background: radial-gradient(circle, #ede9fe, #c4b5fd);
+
+  ion-icon {
+    color: var(--lf-tower);
+  }
+}
+
+.lf-silhouette--lg {
+  width: 100%;
+  height: 130px;
+  border-radius: 18px;
+  margin-bottom: 12px;
+  background: radial-gradient(circle, #fef3c7, #fde68a);
+
+  ion-icon {
+    font-size: 70px;
+    color: #b45309;
+    opacity: 1;
+  }
+}
+
+.lf-photo {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+
+.lf-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lf-lost);
+}
+
+.lf-kicker--found {
+  color: var(--lf-found);
+}
+
+.lf-kicker--tower {
+  color: var(--lf-tower);
+}
+
+.lf-tower-help {
+  margin: 8px 0 0 !important;
+  font-size: 13px;
+  color: #475569;
+}
+
+.lf-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lf-blue);
+}
+
+.lf-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+// ================= compass menu =================
+
+.lf-compass-wrap {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lf-compass-menu {
+  position: absolute;
+  right: 54px;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: lf-menu-in 0.18s ease-out;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: 3px solid #fff;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--lf-text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: var(--lf-shadow);
+
+    ion-icon {
+      font-size: 18px;
+      color: var(--lf-blue);
+    }
+  }
+}
+
+@keyframes lf-menu-in {
+  from { transform: translateX(10px); opacity: 0; }
+}
+
+.lf-compass--back {
+  background: var(--lf-blue);
+  color: #fff;
+}
+
+// ================= bird's-eye view =================
+
+// Flat map: no sky, no 3D mist; sprites a bit smaller so labels stay readable.
+.lf-overview {
+  .lf-sky {
+    display: none;
+  }
+
+  .lf-sprite:not(.lf-sprite--avatar) .lf-body {
+    transform: translateX(-50%) scale(0.7);
+    transform-origin: 50% 100%;
+  }
+
+  .lf-sprite--avatar .lf-body {
+    transform: translateX(-50%) scale(0.8);
+    transform-origin: 50% 100%;
+  }
+
+  .lf-pulse,
+  .lf-range {
+    display: none;
+  }
+}
+
+// Building labels (Leaflet markers, only added in the bird's-eye view).
+.lf-label-icon {
+  background: none;
+  border: none;
+
+  span {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    padding: 2px 7px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.88);
+    color: #0f172a;
+    font-family: var(--ion-font-family, inherit);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+    pointer-events: none;
+  }
+}
+
+.lf-overview-bar {
+  position: absolute;
+  top: calc(var(--ion-safe-area-top, 0px) + 12px);
+  left: 12px;
+  right: 12px;
+  z-index: 1150;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 18px;
+  border: 3px solid #fff;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--lf-text);
+  box-shadow: var(--lf-shadow);
+}
+
+.lf-overview-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  > ion-icon {
+    font-size: 24px;
+    color: var(--lf-blue);
+    flex: none;
+  }
+
+  span {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+  }
+
+  strong {
+    font-size: 15px;
+  }
+
+  small {
+    font-size: 11px;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.lf-overview-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: none;
+    background: #e0f2fe;
+    color: #0c4a6e;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+
+    ion-icon {
+      font-size: 16px;
+    }
+  }
+
+  .lf-overview-back {
+    background: var(--lf-blue);
+    color: #fff;
+  }
+}
+
+// ================= icon colours by distance =================
+// Grey = far, yellow = near (within 100 m), red = inside the item's perimeter.
+// Same colours as the orbs and pins on the map, so the HUD and the map agree.
+
+.lf-sil.lf-state--near {
+  background: #fde68a;
+  box-shadow: 0 0 0 2px #f59e0b;
+
+  ion-icon { color: #92400e; }
+}
+
+.lf-sil.lf-state--inRange {
+  background: var(--lf-pin);
+  box-shadow: 0 0 0 2px #fecdd3;
+  animation: lf-glow 1.2s ease-in-out infinite;
+
+  ion-icon { color: #fff; }
+}
+
+.lf-row.lf-state--near ion-icon { color: #d97706; }
+
+.lf-row.lf-state--inRange {
+  background: #fff1f2;
+
+  ion-icon { color: var(--lf-pin); }
+  .lf-row-main { font-weight: 700; color: #9f1239; }
+}
+
+.lf-silhouette.lf-state--near {
+  background: radial-gradient(circle, #fef3c7, #fde68a);
+  box-shadow: 0 0 0 3px #f59e0b;
+
+  ion-icon { color: #92400e; opacity: 1; }
+}

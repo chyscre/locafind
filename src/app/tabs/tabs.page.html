@@ -1,0 +1,24 @@
+<ion-tabs>
+  <ion-tab-bar slot="bottom">
+    <ion-tab-button tab="map" href="/tabs/map">
+      <ion-icon aria-hidden="true" name="map"></ion-icon>
+      <ion-label>Map</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button tab="browse" href="/tabs/browse">
+      <ion-icon aria-hidden="true" name="list"></ion-icon>
+      <ion-label>Browse</ion-label>
+    </ion-tab-button>
+
+    <!-- Not a route: opens the Lost / Found choice -->
+    <ion-tab-button (click)="openReport()">
+      <ion-icon aria-hidden="true" name="add-circle"></ion-icon>
+      <ion-label>Report</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button tab="profile" href="/tabs/profile">
+      <ion-icon aria-hidden="true" name="person-circle"></ion-icon>
+      <ion-label>Profile</ion-label>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs>

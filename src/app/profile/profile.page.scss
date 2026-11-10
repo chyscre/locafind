@@ -1,0 +1,323 @@
+// Always light (like the map HUD), even when the phone is in dark mode.
+.pf {
+  --background: linear-gradient(#bfe3ff 0, #e8f5ff 220px, #f8fafc 420px);
+  --color: #0f172a;
+  color: #0f172a;
+
+  h1,
+  h2 {
+    color: #0f172a !important;
+  }
+
+  ion-toggle {
+    --track-background: #cbd5e1;
+    color: #0f172a;
+  }
+}
+
+.pf-hero {
+  padding: calc(var(--ion-safe-area-top, 0px) + 16px) 16px 8px;
+  text-align: center;
+
+  h1 {
+    margin: 4px 0 0;
+    font-size: 26px;
+    font-weight: 700;
+  }
+}
+
+.pf-figure {
+  width: 96px;
+  height: 144px;
+  margin: 0 auto;
+  filter: drop-shadow(0 4px 4px rgba(15, 23, 42, 0.25));
+  animation: pf-bob 2.4s ease-in-out infinite;
+
+  ::ng-deep svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+@keyframes pf-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.pf-sub {
+  margin: 2px 0 8px;
+  color: #475569;
+}
+
+.pf-editor {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 20px;
+  border: 3px solid #fff;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
+}
+
+.pf-options {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  justify-content: center;
+  gap: 6px 14px;
+  margin-bottom: 8px;
+}
+
+.pf-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+}
+
+.pf-option--on {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.pf-head {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: block;
+  background: radial-gradient(circle at 50% 35%, #e0f2fe, #93c5fd);
+  border: 2px solid #fff;
+
+  ::ng-deep svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.pf-fields {
+  border-radius: 14px;
+  overflow: hidden;
+  text-align: left;
+  --ion-item-background: #fff;
+
+  ion-item {
+    --background: #fff;
+    --color: #0f172a;
+  }
+}
+
+.pf-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 8px 16px;
+}
+
+.pf-stat {
+  padding: 10px 4px;
+  border-radius: 16px;
+  border: 3px solid #fff;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+
+  strong {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: #2563eb;
+  }
+
+  span {
+    font-size: 11px;
+    color: #475569;
+  }
+}
+
+.pf-section {
+  margin: 16px;
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ion-text-color, #0f172a);
+  }
+}
+
+.pf-badges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.pf-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #64748b;
+  text-align: center;
+
+  strong {
+    font-size: 13px;
+  }
+
+  small {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+}
+
+.pf-badge-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #cbd5e1;
+  color: #fff;
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.pf-badge--earned {
+  background: #fef3c7;
+  color: #78350f;
+
+  .pf-badge-icon {
+    background: radial-gradient(circle at 35% 30%, #fde68a, #f59e0b 60%, #d97706);
+    box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(217, 119, 6, 0.45);
+  }
+}
+
+.pf-progress {
+  width: 80%;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    background: #f59e0b;
+  }
+}
+
+.pf-count {
+  font-weight: 600;
+}
+
+.pf-report {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.pf-report--closed {
+  opacity: 0.6;
+}
+
+.pf-thumb {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.pf-thumb--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+
+  ion-icon {
+    font-size: 28px;
+    color: #475569;
+  }
+}
+
+.pf-report-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  small {
+    color: #64748b;
+  }
+}
+
+.pf-report-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.pf-empty,
+.pf-note {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.pf-toggle-help {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  white-space: normal;
+}
+
+.pf-test {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+
+  p {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #334155;
+  }
+}
+
+.pf-test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

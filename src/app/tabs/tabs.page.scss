@@ -1,0 +1,19 @@
+// Game-style bottom navigation: a rounded, light bar shown on every screen.
+ion-tab-bar {
+  --background: #ffffff;
+  --border: none;
+  --color: #64748b;
+  height: 64px;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.15);
+}
+
+ion-tab-button {
+  --color: #64748b;
+  --color-selected: #2563eb;
+  font-weight: 600;
+
+  ion-icon {
+    font-size: 26px;
+  }
+}

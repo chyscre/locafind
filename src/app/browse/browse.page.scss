@@ -1,0 +1,20 @@
+ion-icon.kind-lost {
+  color: var(--ion-color-medium);
+}
+
+ion-icon.kind-found {
+  color: var(--ion-color-success);
+}
+
+.empty {
+  color: var(--ion-color-medium);
+}
+
+// Lost items change colour with distance, like on the map.
+ion-icon.kind-lost.state-near {
+  color: #d97706;
+}
+
+ion-icon.kind-lost.state-inRange {
+  color: #e11d48;
+}

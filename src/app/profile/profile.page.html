@@ -1,0 +1,159 @@
+<ion-content class="pf">
+  <!-- Explorer card -->
+  <section class="pf-hero">
+    <div class="pf-figure" [innerHTML]="heroSvg()"></div>
+    @if (!editing()) {
+      <h1>{{ profile.displayName() }}</h1>
+      <p class="pf-sub">NEUST Explorer · {{ earned() }} of {{ badges().length }} badges</p>
+      <ion-button size="small" shape="round" fill="outline" class="pf-edit" (click)="startEdit()">
+        <ion-icon slot="start" name="create"></ion-icon>Edit explorer
+      </ion-button>
+    } @else {
+      <div class="pf-editor">
+        <div class="pf-options">
+          @for (a of avatars; track a.id) {
+            <button
+              class="pf-option"
+              [class.pf-option--on]="a.id === draftAvatar()"
+              (click)="draftAvatar.set(a.id)"
+              [attr.aria-label]="a.label"
+            >
+              <span class="pf-head" [innerHTML]="head(a)"></span>
+              <small>{{ a.label }}</small>
+            </button>
+          }
+        </div>
+        <ion-list lines="full" class="pf-fields">
+          <ion-item>
+            <ion-input
+              label="Explorer name"
+              labelPlacement="stacked"
+              placeholder="e.g. Juan"
+              [maxlength]="60"
+              [value]="draftName()"
+              (ionInput)="draftName.set($any($event).detail.value ?? '')"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              label="Contact (shown on your reports)"
+              labelPlacement="stacked"
+              placeholder="e.g. Messenger: Juan Dela Cruz"
+              [maxlength]="80"
+              [value]="draftContact()"
+              (ionInput)="draftContact.set($any($event).detail.value ?? '')"
+            ></ion-input>
+          </ion-item>
+        </ion-list>
+        <div class="pf-editor-actions">
+          <ion-button fill="clear" (click)="editing.set(false)">Cancel</ion-button>
+          <ion-button shape="round" (click)="saveEdit()">Save</ion-button>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- Stats -->
+  <section class="pf-stats">
+    <div class="pf-stat">
+      <strong>{{ stats().returned }}</strong>
+      <span>Items returned</span>
+    </div>
+    <div class="pf-stat">
+      <strong>{{ stats().surrendered }}</strong>
+      <span>Surrendered</span>
+    </div>
+    <div class="pf-stat">
+      <strong>{{ stats().gotBack }}</strong>
+      <span>Got back</span>
+    </div>
+    <div class="pf-stat">
+      <strong>{{ stats().total }}</strong>
+      <span>Reports</span>
+    </div>
+  </section>
+
+  <!-- Achievements -->
+  <section class="pf-section">
+    <h2>Achievements</h2>
+    <div class="pf-badges">
+      @for (b of badges(); track b.id) {
+        <div class="pf-badge" [class.pf-badge--earned]="b.value >= b.goal">
+          <div class="pf-badge-icon"><ion-icon [name]="b.icon" aria-hidden="true"></ion-icon></div>
+          <strong>{{ b.name }}</strong>
+          <small>{{ b.value >= b.goal ? 'Earned!' : b.how }}</small>
+          @if (b.goal > 1 && b.value < b.goal) {
+            <div class="pf-progress"><span [style.width.%]="(b.value / b.goal) * 100"></span></div>
+            <small class="pf-count">{{ b.value }} / {{ b.goal }}</small>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- My reports -->
+  <section class="pf-section">
+    <h2>My reports</h2>
+    @for (r of reports.mine(); track r.id) {
+      <div class="pf-report" [class.pf-report--closed]="r.status === 'recovered'">
+        @if (r.photo) {
+          <img class="pf-thumb" [src]="r.photo" [alt]="r.name" />
+        } @else {
+          <div class="pf-thumb pf-thumb--icon"><ion-icon [name]="icon[r.category]" aria-hidden="true"></ion-icon></div>
+        }
+        <div class="pf-report-main">
+          <div class="pf-report-top">
+            <strong>{{ r.name }}</strong>
+            <ion-badge [color]="r.status === 'recovered' ? 'medium' : r.type === 'lost' ? 'warning' : 'success'">
+              {{ r.status === 'recovered' ? 'Closed' : r.type === 'lost' ? 'Lost' : 'Found' }}
+            </ion-badge>
+          </div>
+          <small>{{ r.createdAt | date: 'MMM d, h:mm a' }}</small>
+          @if (r.type === 'found' && r.custody) {
+            <small>{{ custodyLabel[r.custody] }}</small>
+          }
+          @if (r.status === 'active') {
+            <div class="pf-report-actions">
+              @if (r.type === 'found' && r.custody === 'with_finder') {
+                <ion-button size="small" fill="outline" shape="round" (click)="markSurrendered(r)">Surrendered</ion-button>
+              }
+              <ion-button size="small" shape="round" (click)="markRecovered(r)">
+                {{ r.type === 'lost' ? 'I got it back' : 'Returned' }}
+              </ion-button>
+            </div>
+          }
+        </div>
+      </div>
+    } @empty {
+      <p class="pf-empty">No reports yet. Use the <strong>Report</strong> tab to add a lost or found item.</p>
+    }
+    @if (reports.offline()) {
+      <p class="pf-note">Offline: the server can't be reached, so new reports are saved on this phone only.</p>
+    }
+  </section>
+
+  <!-- Settings -->
+  <section class="pf-section">
+    <h2>Testing</h2>
+    <ion-list lines="none" class="pf-fields">
+      <ion-item>
+        <ion-toggle [checked]="location.demoMode()" (ionChange)="setDemo($event.detail.checked)">
+          <span>Demo mode</span>
+          <small class="pf-toggle-help">For testing away from campus: tap the map to walk there.</small>
+        </ion-toggle>
+      </ion-item>
+    </ion-list>
+    <div class="pf-test">
+      <p><strong>Test anywhere:</strong> place 4 pretend items around where you are now (25 m to 130 m away), then walk toward them with real GPS. They stay on this phone and are not saved to the database.</p>
+      <div class="pf-test-actions">
+        <ion-button size="small" shape="round" (click)="placeTestItems()">
+          <ion-icon slot="start" name="locate"></ion-icon>Place test items around me
+        </ion-button>
+        @if (reports.hasTestItems()) {
+          <ion-button size="small" shape="round" fill="outline" color="medium" (click)="clearTestItems()">Remove</ion-button>
+        }
+      </div>
+    </div>
+    <p class="pf-note">Achievements and "My reports" count the reports made on this phone (the prototype has no login).</p>
+  </section>
+</ion-content>

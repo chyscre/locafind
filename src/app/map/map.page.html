@@ -1,0 +1,261 @@
+<ion-content [fullscreen]="true" [scrollY]="false">
+  <!-- 3D stage: tilted ground (Leaflet), sky, and upright sprites -->
+  <div
+    #stage
+    class="lf-stage"
+    [class.lf-overview]="overview()"
+    slot="fixed"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointercancel)="onPointerUp($event)"
+  >
+    <div #mapEl class="lf-map"></div>
+    <div #skyEl class="lf-sky" aria-hidden="true">
+      <div class="lf-cloud lf-cloud--a"></div>
+      <div class="lf-cloud lf-cloud--b"></div>
+      <div class="lf-cloud lf-cloud--c"></div>
+    </div>
+    <div #spriteLayer class="lf-sprites"></div>
+  </div>
+
+  <!-- Top: notices on the left, legend always visible on the right (hidden in the bird's-eye view) -->
+  @if (!overview()) {
+  <div class="lf-top" slot="fixed">
+    <div class="lf-top-left">
+      @if (location.demoMode()) {
+        <div class="lf-note">Demo mode: tap the ground to walk.</div>
+      } @else if (location.error()) {
+        <div class="lf-note lf-note--warn">
+          {{ location.error() }}
+          <button class="lf-link" (click)="toggleDemo()">Use Demo mode</button>
+        </div>
+      }
+      @if (reports.offline()) {
+        <div class="lf-note lf-note--warn">
+          Offline: showing sample reports.
+          @if (reports.hasServer) {
+            <button class="lf-link" (click)="reports.load()">Retry</button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="lf-legend" aria-label="Map legend">
+      <div><span class="lf-orb lf-orb--far lf-mini"><span>?</span></span> Missing</div>
+      <div><span class="lf-orb lf-orb--near lf-mini"><span>?</span></span> Near you</div>
+      <div><span class="lf-pin lf-mini-pin"><ion-icon name="help"></ion-icon></span> Unlocked</div>
+      <div><span class="lf-crate lf-mini"><ion-icon name="cube"></ion-icon></span> Found item</div>
+      <div><span class="lf-legend-tower"><ion-icon name="shield-checkmark"></ion-icon></span> Surrender</div>
+    </div>
+  </div>
+  }
+
+  @if (overview()) {
+    <div class="lf-overview-bar" slot="fixed">
+      <div class="lf-overview-title">
+        <ion-icon name="map" aria-hidden="true"></ion-icon>
+        <span><strong>NEUST Sumacab</strong><small>Bird's-eye view · drag to look around</small></span>
+      </div>
+      <div class="lf-overview-actions">
+        <button (click)="findMe()"><ion-icon name="locate" aria-hidden="true"></ion-icon> Find me</button>
+        <button class="lf-overview-back" (click)="exitOverview()"><ion-icon name="walk" aria-hidden="true"></ion-icon> Back</button>
+      </div>
+    </div>
+  }
+
+  @if (banner(); as msg) {
+    <div class="lf-banner" slot="fixed" role="status">
+      <ion-icon name="sparkles" aria-hidden="true"></ion-icon> {{ msg }}
+    </div>
+  }
+
+  <!-- Bottom left: the explorer's portrait; tap it to choose animal and name -->
+  @if (!selected() && !selectedTower() && !pickerOpen()) {
+    <div class="lf-hud-left" slot="fixed">
+      <button class="lf-portrait" (click)="openPicker()" aria-label="Choose your explorer">
+        <span class="lf-head lf-head--lg" [innerHTML]="profileHead()"></span>
+        <span class="lf-portrait-name">{{ profile.displayName() }}</span>
+      </button>
+    </div>
+  }
+
+  <!-- Bottom right: the compass, with Nearby just below it -->
+  @if (!selected() && !selectedTower() && !pickerOpen()) {
+    <div class="lf-hud" slot="fixed">
+      @if (!nearbyOpen()) {
+        <div class="lf-compass-wrap">
+          @if (compassMenu()) {
+            <div class="lf-compass-menu" role="menu">
+              <button role="menuitem" (click)="enterOverview()">
+                <ion-icon name="map" aria-hidden="true"></ion-icon> Bird's-eye view
+              </button>
+              <button role="menuitem" (click)="pointNorth()">
+                <ion-icon name="navigate" aria-hidden="true"></ion-icon> Face north
+              </button>
+            </div>
+          }
+          <button
+            class="lf-round lf-compass"
+            [class.lf-compass--back]="overview()"
+            (click)="onCompass()"
+            [attr.aria-label]="overview() ? 'Back to explorer view' : 'Compass options'"
+          >
+            @if (overview()) {
+              <ion-icon name="walk" aria-hidden="true"></ion-icon>
+            } @else {
+              <span class="lf-needle" [style.transform]="'rotate(' + compass() + 'deg)'"></span>
+            }
+          </button>
+        </div>
+      }
+
+      <div class="lf-nearby" [class.lf-nearby--open]="nearbyOpen()">
+        @if (!nearbyOpen()) {
+          <button class="lf-nearby-bar" (click)="nearbyOpen.set(true)" aria-label="Open nearby panel">
+            <span class="lf-nearby-label">NEARBY</span>
+            <span class="lf-nearby-sils">
+              @for (v of nearby().slice(0, 3); track v.report.id) {
+                <span class="lf-sil" [class]="'lf-sil lf-state--' + v.state"><ion-icon [name]="icon[v.report.category]" aria-hidden="true"></ion-icon></span>
+              } @empty {
+                <span class="lf-muted">Nothing yet</span>
+              }
+            </span>
+          </button>
+        } @else {
+          <div class="lf-nearby-head">
+            <strong>Missing items near you</strong>
+            <button class="lf-x" (click)="nearbyOpen.set(false)" aria-label="Close nearby panel">
+              <ion-icon name="chevron-down"></ion-icon>
+            </button>
+          </div>
+          @for (v of nearby(); track v.report.id) {
+            <button class="lf-row" [class]="'lf-row lf-state--' + v.state" (click)="focus(v)">
+              <ion-icon [name]="icon[v.report.category]" aria-hidden="true"></ion-icon>
+              <span class="lf-row-main">{{ v.state === 'inRange' ? v.report.name : categoryLabel[v.report.category] }}</span>
+              <span class="lf-muted">{{ formatDistance(v.distance) }}</span>
+            </button>
+          } @empty {
+            <p class="lf-muted lf-pad">No missing items within 100 m.</p>
+          }
+          <div class="lf-nearby-head"><strong>Surrender points</strong></div>
+          @for (t of towers(); track t.point.id) {
+            <button class="lf-row" (click)="selectedTower.set(t.point); nearbyOpen.set(false)">
+              <ion-icon name="shield-checkmark" aria-hidden="true"></ion-icon>
+              <span class="lf-row-main">{{ t.point.name }}</span>
+              <span class="lf-muted">{{ formatDistance(t.distance) }}</span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Explorer card: choose animal and display name, or go to the Profile -->
+  @if (pickerOpen()) {
+    <div class="lf-picker-backdrop" slot="fixed" (click)="pickerOpen.set(false)"></div>
+    <div class="lf-picker" slot="fixed" role="dialog" aria-label="Choose your explorer">
+      <button class="lf-x lf-card-close" (click)="pickerOpen.set(false)" aria-label="Close">
+        <ion-icon name="close"></ion-icon>
+      </button>
+      <h2>Choose your explorer</h2>
+      <div class="lf-picker-stage" [innerHTML]="avatarFull(pickerAvatar())"></div>
+      <div class="lf-picker-options">
+        @for (a of avatars; track a.id) {
+          <button
+            class="lf-picker-option"
+            [class.lf-picker-option--on]="a.id === pickerAvatar()"
+            (click)="pickerAvatar.set(a.id)"
+            [attr.aria-label]="a.label"
+          >
+            <span class="lf-head" [innerHTML]="avatarHead(a)"></span>
+            <small>{{ a.label }}</small>
+          </button>
+        }
+      </div>
+      <ion-item lines="full" class="lf-picker-name">
+        <ion-input
+          label="Display name"
+          labelPlacement="stacked"
+          placeholder="e.g. Juan"
+          [maxlength]="60"
+          [value]="pickerName()"
+          (ionInput)="pickerName.set($any($event).detail.value ?? '')"
+        ></ion-input>
+      </ion-item>
+      <div class="lf-picker-actions">
+        <ion-button fill="outline" shape="round" (click)="openProfile()">
+          <ion-icon slot="start" name="person-circle"></ion-icon>Profile
+        </ion-button>
+        <ion-button shape="round" (click)="savePicker()">Save</ion-button>
+      </div>
+    </div>
+  }
+
+  <!-- Surrender point card -->
+  @if (selectedTower(); as t) {
+    <div class="lf-card" slot="fixed">
+      <button class="lf-x lf-card-close" (click)="selectedTower.set(null)" aria-label="Close">
+        <ion-icon name="close"></ion-icon>
+      </button>
+      <div class="lf-card-locked">
+        <div class="lf-silhouette lf-silhouette--tower"><ion-icon name="shield-checkmark" aria-hidden="true"></ion-icon></div>
+        <div>
+          <div class="lf-kicker lf-kicker--tower">Surrender point</div>
+          <h2>{{ t.name }}</h2>
+          <div class="lf-muted">{{ t.hours }}</div>
+          <p class="lf-tower-help">Found something? Hand it to the guard here, then mark it "Surrendered" in your Profile.</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Detail card: locked when far, full details inside the perimeter -->
+  @if (selected(); as v) {
+    <div class="lf-card" slot="fixed">
+      <button class="lf-x lf-card-close" (click)="selectedId.set(null)" aria-label="Close">
+        <ion-icon name="close"></ion-icon>
+      </button>
+
+      @if (v.report.type === 'lost' && v.state !== 'inRange') {
+        <div class="lf-card-locked">
+          <div class="lf-silhouette" [class]="'lf-silhouette lf-state--' + v.state"><ion-icon [name]="icon[v.report.category]" aria-hidden="true"></ion-icon></div>
+          <div>
+            <div class="lf-kicker">Missing item</div>
+            <h2>{{ categoryLabel[v.report.category] }}</h2>
+            <div class="lf-muted">{{ formatDistance(v.distance) }}</div>
+            <div class="lf-hint"><ion-icon name="lock-closed" aria-hidden="true"></ion-icon> Get closer to see details.</div>
+          </div>
+        </div>
+      } @else {
+        <div class="lf-card-open">
+          @if (v.report.photo) {
+            <img class="lf-photo" [src]="v.report.photo" [alt]="v.report.name" />
+          } @else {
+            <div class="lf-silhouette lf-silhouette--lg"><ion-icon [name]="icon[v.report.category]" aria-hidden="true"></ion-icon></div>
+          }
+          <div class="lf-kicker" [class.lf-kicker--found]="v.report.type === 'found'">
+            {{ v.report.type === 'lost' ? 'Missing item' : 'Found item' }} · {{ categoryLabel[v.report.category] }}
+          </div>
+          <h2>{{ v.report.name }}</h2>
+          <p>{{ v.report.description }}</p>
+          <div class="lf-meta">
+            <span>Reported {{ v.report.createdAt | date: 'MMM d, h:mm a' }}</span>
+            <span>{{ formatDistance(v.distance) }}</span>
+            @if (v.report.type === 'lost') {
+              <span>Perimeter {{ v.report.radius ?? defaultRadius }} m</span>
+            }
+            @if (v.report.type === 'found' && v.report.custody) {
+              <span>{{ custodyLabel[v.report.custody] }}</span>
+            }
+          </div>
+          <ion-button expand="block" shape="round" (click)="contact(v)">
+            {{ v.report.type === 'lost' ? 'I found this' : 'This is mine' }}
+          </ion-button>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="lf-attrib" slot="fixed">© OpenStreetMap contributors</div>
+</ion-content>

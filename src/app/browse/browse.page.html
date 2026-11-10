@@ -1,0 +1,48 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Browse</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Search umbrella, ID, bag…"
+      [value]="query()"
+      (ionInput)="query.set($any($event).detail.value ?? '')"
+    ></ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="filter()" (ionChange)="setFilter($event.detail.value)">
+      <ion-segment-button value="all"><ion-label>All</ion-label></ion-segment-button>
+      <ion-segment-button value="lost"><ion-label>Lost</ion-label></ion-segment-button>
+      <ion-segment-button value="found"><ion-label>Found</ion-label></ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  @if (reports.error()) {
+    <div class="ion-padding ion-text-center">
+      <p>{{ reports.error() }}</p>
+      <ion-button fill="outline" (click)="reports.load()">Retry</ion-button>
+    </div>
+  }
+
+  <ion-list>
+    @for (v of results(); track v.report.id) {
+      <ion-item>
+        <ion-icon slot="start" [name]="icon[v.report.category]" [class]="'kind-' + v.report.type + ' state-' + v.state"></ion-icon>
+        <ion-label>
+          <h2>{{ v.report.name }}</h2>
+          <p>{{ categoryLabel[v.report.category] }} · {{ formatDistance(v.distance) }}</p>
+          @if (v.report.type === 'found' && v.report.custody) {
+            <p>{{ custodyLabel[v.report.custody] }}</p>
+          }
+        </ion-label>
+        <ion-badge slot="end" [color]="v.report.type === 'lost' ? 'medium' : 'success'">
+          {{ v.report.type === 'lost' ? 'Lost' : 'Found' }}
+        </ion-badge>
+      </ion-item>
+    } @empty {
+      <div class="ion-padding ion-text-center empty">No reports match.</div>
+    }
+  </ion-list>
+</ion-content>

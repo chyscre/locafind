@@ -1,0 +1,151 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/map"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ isLost ? 'Report Lost Item' : 'Report Found Item' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="rp">
+  <!-- ---------- Photo ---------- -->
+  <section class="rp-section">
+    <h3>Photo {{ isLost ? '(optional)' : '' }}</h3>
+
+    @if (preview(); as src) {
+      <img class="rp-photo" [src]="src" alt="Photo preview" />
+      <div class="rp-row">
+        <ion-button fill="outline" (click)="retake()"><ion-icon slot="start" name="refresh"></ion-icon>Retake</ion-button>
+        <ion-button (click)="confirmPhoto()"><ion-icon slot="start" name="checkmark"></ion-icon>Confirm</ion-button>
+      </div>
+    } @else if (photo(); as src) {
+      <img class="rp-photo" [src]="src" alt="Item photo" />
+      <div class="rp-row">
+        <ion-button fill="outline" (click)="retake()"><ion-icon slot="start" name="refresh"></ion-icon>Retake</ion-button>
+        <ion-button fill="clear" color="danger" (click)="removePhoto()">Remove</ion-button>
+      </div>
+    } @else {
+      <div class="rp-photo-empty" [class.rp-invalid]="submitted() && !isLost">
+        <ion-icon name="camera" aria-hidden="true"></ion-icon>
+        <div class="rp-row">
+          <ion-button (click)="takePhoto('camera')"><ion-icon slot="start" name="camera"></ion-icon>Take photo</ion-button>
+          <ion-button fill="outline" (click)="takePhoto('gallery')"><ion-icon slot="start" name="images"></ion-icon>Gallery</ion-button>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ---------- Item ---------- -->
+  <section class="rp-section">
+    <h3>Item</h3>
+    <ion-list lines="full" class="rp-list">
+      <ion-item [class.rp-invalid]="submitted() && !name().trim()">
+        <ion-input
+          label="Item name"
+          labelPlacement="stacked"
+          placeholder="e.g. Blue umbrella"
+          [maxlength]="60"
+          [value]="name()"
+          (ionInput)="name.set($any($event).detail.value ?? '')"
+        ></ion-input>
+      </ion-item>
+      <ion-item [class.rp-invalid]="submitted() && !category()">
+        <ion-select
+          label="Category"
+          labelPlacement="stacked"
+          placeholder="Choose one"
+          interface="action-sheet"
+          [value]="category()"
+          (ionChange)="setCategory($event.detail.value)"
+        >
+          @for (c of categories; track c) {
+            <ion-select-option [value]="c">{{ categoryLabel[c] }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+      <ion-item>
+        <ion-textarea
+          label="Description"
+          labelPlacement="stacked"
+          placeholder="Colour, brand, marks. Keep out private details (e.g. what is inside a wallet)."
+          [autoGrow]="true"
+          [maxlength]="240"
+          [value]="description()"
+          (ionInput)="description.set($any($event).detail.value ?? '')"
+        ></ion-textarea>
+      </ion-item>
+    </ion-list>
+  </section>
+
+  <!-- ---------- Location ---------- -->
+  <section class="rp-section">
+    <h3>{{ isLost ? 'Where did you last have it?' : 'Where did you find it?' }}</h3>
+    <p class="rp-help">Tap the map or drag the pin. GPS can be off indoors.</p>
+    <div class="rp-picker-wrap">
+      <div #pickerEl class="rp-picker"></div>
+      <button class="rp-locate" (click)="useMyLocation()" aria-label="Use my location">
+        <ion-icon name="locate"></ion-icon>
+      </button>
+    </div>
+
+    @if (isLost) {
+      <p class="rp-help">How sure are you of the spot? This sets the search perimeter.</p>
+      <ion-segment [value]="radius()" (ionChange)="setRadius($event.detail.value)">
+        @for (o of radiusOptions; track o.value) {
+          <ion-segment-button [value]="o.value"><ion-label>{{ o.label }}</ion-label></ion-segment-button>
+        }
+      </ion-segment>
+    }
+  </section>
+
+  <!-- ---------- Custody (found only) ---------- -->
+  @if (!isLost) {
+    <section class="rp-section">
+      <h3>Who has the item now?</h3>
+      <ion-segment [value]="custody()" (ionChange)="setCustody($event.detail.value)">
+        <ion-segment-button value="with_finder"><ion-label>With me</ion-label></ion-segment-button>
+        <ion-segment-button value="security"><ion-label>Campus Security</ion-label></ion-segment-button>
+      </ion-segment>
+    </section>
+  }
+
+  <!-- ---------- Contact ---------- -->
+  <section class="rp-section">
+    <h3>How can people reach you?</h3>
+    <p class="rp-help">Only shown to students who are inside the item's perimeter.</p>
+    <ion-list lines="full" class="rp-list">
+      <ion-item [class.rp-invalid]="submitted() && !reporterName().trim()">
+        <ion-input
+          label="Your name"
+          labelPlacement="stacked"
+          [maxlength]="60"
+          [value]="reporterName()"
+          (ionInput)="reporterName.set($any($event).detail.value ?? '')"
+        ></ion-input>
+      </ion-item>
+      <ion-item [class.rp-invalid]="submitted() && !contact().trim()">
+        <ion-input
+          label="Contact"
+          labelPlacement="stacked"
+          placeholder="e.g. Messenger: Juan Dela Cruz"
+          [maxlength]="80"
+          [value]="contact()"
+          (ionInput)="contact.set($any($event).detail.value ?? '')"
+        ></ion-input>
+      </ion-item>
+    </ion-list>
+  </section>
+
+  <section class="rp-section rp-submit">
+    @if (submitted() && missing().length) {
+      <p class="rp-error">Please add: {{ missing().join(', ') }}.</p>
+    }
+    <ion-button expand="block" [disabled]="saving()" (click)="submit()">
+      @if (saving()) {
+        <ion-spinner name="dots"></ion-spinner>
+      } @else {
+        Submit report
+      }
+    </ion-button>
+  </section>
+</ion-content>
