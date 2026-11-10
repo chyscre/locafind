@@ -5,7 +5,7 @@ Lost items appear as mystery orbs on a 3D campus map and unlock when you walk in
 search perimeter. Built with Ionic Angular, Capacitor (Camera, Geolocation, Haptics),
 Leaflet, and a PHP + MySQL API.
 
-- **Install on Android:** download [`apk/LocaFind-v1.1.apk`](apk/LocaFind-v1.1.apk) on the phone,
+- **Install on Android:** download [`apk/LocaFind-v1.2.apk`](apk/LocaFind-v1.2.apk) on the phone,
   open it, and allow "Install unknown apps" (Android 7.0 or newer). Sign up with your student
   number on first launch, or continue as a guest.
 - Concept document: [`docs/LocaFind_Project_Concept.pdf`](docs/LocaFind_Project_Concept.pdf)
@@ -42,7 +42,7 @@ Leaflet, and a PHP + MySQL API.
 ## About the APK
 
 The APK reaches the database at the laptop running XAMPP (`apiUrl` in
-`src/environments/environment.prod.ts`, currently `192.168.254.160`). On another Wi-Fi, or when
+`src/environments/environment.prod.ts`, currently `192.168.1.11`). On another Wi-Fi, or when
 that laptop is off, the app runs in **offline mode** with sample reports, and new reports stay on
 that phone. Everything else (map, avatar, camera, Demo mode, test items) still works.
 

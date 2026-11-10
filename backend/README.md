@@ -7,8 +7,10 @@ class `students.php` example. It runs on XAMPP (Apache + MariaDB/MySQL).
 
 1. Copy the `api` and `sql` folders into `C:\xampp\htdocs\locafind\` (api has `config.php`, `common.php`, `reports.php`, `auth.php`).
 2. Start **Apache** and **MySQL** in the XAMPP Control Panel.
-3. Import `sql/locafind.sql` in phpMyAdmin (Import tab), or run:
-   `C:\xampp\mysql\bin\mysql.exe -u root < sql\locafind.sql`
+3. Import `sql/locafind_setup.sql` in phpMyAdmin (Import tab), or run:
+   `C:\xampp\mysql\bin\mysql.exe -u root < sql\locafind_setup.sql`
+   It makes the same tables and sample reports as `sql/locafind.sql`, but adds the samples with a plain
+   insert (the original's `INSERT ... SELECT` crashed MariaDB 10.4 on one laptop). Both are safe to run again.
    It creates the `locafind` database, the `reports` table, and 5 sample reports.
 4. Check `api/config.php` if your MySQL user or password is not XAMPP's default (`root`, no password).
 5. Open http://localhost/locafind/api/reports.php in a browser. You should see `{"success":true,"data":[...]}`.
