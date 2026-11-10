@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { AlertController, ToastController } from '@ionic/angular/lazy';
+import { AlertController, NavController, ToastController } from '@ionic/angular/lazy';
+import { AuthService } from '../core/auth.service';
 import { AVATARS, AvatarPreset, avatarById, avatarHeadSvg, avatarSvg } from '../core/avatar';
 import { LocationService } from '../core/location.service';
 import { ProfileService } from '../core/profile.service';
@@ -31,8 +32,10 @@ export class ProfilePage implements OnInit {
   readonly profile = inject(ProfileService);
   readonly reports = inject(ReportService);
   readonly location = inject(LocationService);
+  readonly auth = inject(AuthService);
   private readonly alerts = inject(AlertController);
   private readonly toasts = inject(ToastController);
+  private readonly nav = inject(NavController);
   private readonly sanitizer = inject(DomSanitizer);
 
   readonly avatars = AVATARS;
@@ -93,13 +96,48 @@ export class ProfilePage implements OnInit {
     this.editing.set(true);
   }
 
-  saveEdit(): void {
-    this.profile.update({
-      avatar: this.draftAvatar(),
-      name: this.draftName().trim(),
-      contact: this.draftContact().trim(),
-    });
+  async saveEdit(): Promise<void> {
+    const avatar = this.draftAvatar();
+    const name = this.draftName().trim();
+    const contact = this.draftContact().trim();
+    this.profile.update({ avatar, name, contact });
     this.editing.set(false);
+    // Logged in: save it to the account too, so it follows you to other phones.
+    if (this.auth.loggedIn()) {
+      try {
+        await this.auth.updateProfile({ avatar, contact, ...(name ? { displayName: name } : {}) });
+      } catch (e) {
+        await this.toastMsg(`Saved on this phone, but not to your account: ${AuthService.message(e)}`);
+      }
+    }
+  }
+
+  // ---------- account ----------
+
+  async logout(): Promise<void> {
+    const alert = await this.alerts.create({
+      header: 'Log out?',
+      message: 'You can log back in any time with your student number and password.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Log out',
+          handler: () => {
+            void this.auth.logout().then(() => this.nav.navigateRoot('/login'));
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  goToLogin(): void {
+    void this.nav.navigateForward('/login');
+  }
+
+  private async toastMsg(message: string): Promise<void> {
+    const t = await this.toasts.create({ message, duration: 2800, position: 'top' });
+    await t.present();
   }
 
   head(a: AvatarPreset): SafeHtml {

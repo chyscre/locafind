@@ -18,6 +18,7 @@ import { AVATARS, AvatarPreset, avatarBackSvg, avatarById, avatarHeadSvg, avatar
 import { CAMPUS_BOUNDARY, CAMPUS_BOUNDS, CAMPUS_CENTER, MAP_LABELS } from '../core/campus';
 import { DEFAULT_RADIUS_M, NEARBY_RANGE_M, distanceM, formatDistance } from '../core/geo';
 import { DEMO_SPEED, LocationService } from '../core/location.service';
+import { AuthService } from '../core/auth.service';
 import { ProfileService } from '../core/profile.service';
 import { CATEGORY_ICON, CATEGORY_LABEL, CUSTODY_LABEL, LatLng, ReportView, SurrenderPoint } from '../core/report.model';
 import { ReportService } from '../core/report.service';
@@ -80,6 +81,7 @@ export class MapPage implements AfterViewInit, OnDestroy {
   readonly location = inject(LocationService);
   readonly reports = inject(ReportService);
   readonly profile = inject(ProfileService);
+  private readonly auth = inject(AuthService);
   private readonly alerts = inject(AlertController);
   private readonly nav = inject(NavController);
   private readonly sanitizer = inject(DomSanitizer);
@@ -753,8 +755,14 @@ export class MapPage implements AfterViewInit, OnDestroy {
   }
 
   savePicker(): void {
-    this.profile.update({ avatar: this.pickerAvatar(), name: this.pickerName().trim() });
+    const avatar = this.pickerAvatar();
+    const name = this.pickerName().trim();
+    this.profile.update({ avatar, name });
     this.pickerOpen.set(false);
+    // Logged in: keep the account in step (best effort; the phone copy is already saved).
+    if (this.auth.loggedIn()) {
+      void this.auth.updateProfile({ avatar, ...(name ? { displayName: name } : {}) }).catch(() => undefined);
+    }
   }
 
   /** The card's Profile button: achievements and reports live on the Profile tab. */

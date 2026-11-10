@@ -321,3 +321,49 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+
+.pf-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 16px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+
+  ion-button {
+    margin: 0;
+    flex: none;
+  }
+}
+
+.pf-account-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  > ion-icon {
+    font-size: 26px;
+    color: #2563eb;
+    flex: none;
+  }
+
+  span {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+  }
+
+  strong {
+    font-size: 14px;
+  }
+
+  small {
+    font-size: 12px;
+    color: #64748b;
+  }
+}

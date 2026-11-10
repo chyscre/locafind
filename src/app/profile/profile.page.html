@@ -53,6 +53,31 @@
     }
   </section>
 
+  <!-- Account -->
+  <section class="pf-account">
+    @if (auth.user(); as u) {
+      <div class="pf-account-info">
+        <ion-icon name="shield-checkmark" aria-hidden="true"></ion-icon>
+        <span>
+          <strong>Logged in</strong>
+          <small>Student no. {{ u.studentNo }}</small>
+        </span>
+      </div>
+      <ion-button size="small" shape="round" fill="outline" color="medium" (click)="logout()">
+        <ion-icon slot="start" name="log-out"></ion-icon>Log out
+      </ion-button>
+    } @else {
+      <div class="pf-account-info">
+        <ion-icon name="person-circle" aria-hidden="true"></ion-icon>
+        <span>
+          <strong>Browsing as a guest</strong>
+          <small>Log in to post, update or delete reports.</small>
+        </span>
+      </div>
+      <ion-button size="small" shape="round" (click)="goToLogin()">Log in / Sign up</ion-button>
+    }
+  </section>
+
   <!-- Stats -->
   <section class="pf-stats">
     <div class="pf-stat">
@@ -157,6 +182,6 @@
         }
       </div>
     </div>
-    <p class="pf-note">Achievements and "My reports" count the reports made on this phone (the prototype has no login).</p>
+    <p class="pf-note">Achievements and "My reports" come from your account, so they follow you to any phone you log in on.</p>
   </section>
 </ion-content>

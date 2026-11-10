@@ -43,3 +43,34 @@ SELECT * FROM (
          15.4486510, 120.9410950, NULL, 'Sample Student E', 'Messenger: Sample Student E', 'with_finder', 'active'
 ) AS seed
 WHERE NOT EXISTS (SELECT 1 FROM reports);
+
+-- ---------------------------------------------------------------------------
+-- Accounts (login). Safe to run again on an existing database.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  student_no VARCHAR(20) NOT NULL,
+  display_name VARCHAR(30) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,     -- password_hash() output, never the password
+  contact VARCHAR(80) NOT NULL DEFAULT '',
+  avatar VARCHAR(20) NOT NULL DEFAULT 'kitty',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_users_student_no (student_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Login tokens: only a SHA-256 hash of each token is stored.
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  token_hash CHAR(64) NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  PRIMARY KEY (token_hash),
+  KEY idx_tokens_user (user_id),
+  CONSTRAINT fk_tokens_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Who posted each report (NULL for the sample reports).
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS user_id INT UNSIGNED NULL AFTER id;
+ALTER TABLE reports ADD KEY IF NOT EXISTS idx_reports_user (user_id);

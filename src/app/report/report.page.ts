@@ -6,7 +6,8 @@ import * as L from 'leaflet';
 import { DEFAULT_RADIUS_M } from '../core/geo';
 import { LocationService } from '../core/location.service';
 import { CATEGORY_ICON, CATEGORY_LABEL, Category, Custody, LatLng, ReportType } from '../core/report.model';
-import { ReportService, StoredReport } from '../core/report.service';
+import { LoginRequiredError, ReportService, StoredReport } from '../core/report.service';
+import { AuthService } from '../core/auth.service';
 import { ProfileService } from '../core/profile.service';
 import { CAMPUS_CENTER } from '../core/sample-data';
 
@@ -226,8 +227,13 @@ export class ReportPage implements AfterViewInit, OnDestroy {
       this.profile.update({ name: report.reporterName, contact: report.contact });
       await this.toast(this.isLost ? 'Lost item reported. It is now on the map.' : 'Found item reported. Thank you!');
       await this.nav.navigateRoot('/tabs/map');
-    } catch {
-      await this.toast('Could not submit. Check your internet connection and try again.');
+    } catch (e) {
+      if (e instanceof LoginRequiredError) {
+        await this.toast('Please log in or sign up to post a report. Your form is kept until you leave this page.');
+        await this.nav.navigateForward('/login');
+      } else {
+        await this.toast(AuthService.message(e).replace('continue as a guest', 'try again later'));
+      }
     } finally {
       this.saving.set(false);
     }

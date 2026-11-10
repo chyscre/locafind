@@ -1,0 +1,116 @@
+<ion-content class="lg" [fullscreen]="true">
+  <div class="lg-sky" aria-hidden="true">
+    <div class="lg-cloud lg-cloud--a"></div>
+    <div class="lg-cloud lg-cloud--b"></div>
+  </div>
+
+  <div class="lg-wrap">
+    <div class="lg-brand">
+      <div class="lg-mascot" [innerHTML]="mascot()"></div>
+      <h1>LocaFind</h1>
+      <p>NEUST Sumacab lost &amp; found</p>
+    </div>
+
+    <div class="lg-card">
+      @if (expired) {
+        <p class="lg-note">Your login has expired. Please log in again.</p>
+      }
+
+      <ion-segment [value]="mode()" (ionChange)="setMode($event.detail.value)">
+        <ion-segment-button value="login"><ion-label>Log in</ion-label></ion-segment-button>
+        <ion-segment-button value="register"><ion-label>Sign up</ion-label></ion-segment-button>
+      </ion-segment>
+
+      <ion-list lines="full" class="lg-fields">
+        <ion-item>
+          <ion-input
+            label="Student number"
+            labelPlacement="stacked"
+            placeholder="e.g. 2024-12345"
+            autocomplete="username"
+            [maxlength]="20"
+            [value]="studentNo()"
+            (ionInput)="studentNo.set($any($event).detail.value ?? '')"
+          ></ion-input>
+        </ion-item>
+
+        @if (mode() === 'register') {
+          <ion-item>
+            <ion-input
+              label="Display name"
+              labelPlacement="stacked"
+              placeholder="How others see you, e.g. Juan"
+              [maxlength]="30"
+              [value]="displayName()"
+              (ionInput)="displayName.set($any($event).detail.value ?? '')"
+            ></ion-input>
+          </ion-item>
+        }
+
+        <ion-item>
+          <ion-input
+            label="Password"
+            labelPlacement="stacked"
+            [type]="showPassword() ? 'text' : 'password'"
+            [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"
+            [maxlength]="72"
+            [value]="password()"
+            (ionInput)="password.set($any($event).detail.value ?? '')"
+            (keyup.enter)="mode() === 'login' && submit()"
+          ></ion-input>
+          <ion-button
+            slot="end"
+            fill="clear"
+            (click)="showPassword.set(!showPassword())"
+            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+          >
+            <ion-icon slot="icon-only" [name]="showPassword() ? 'eye-off' : 'eye'"></ion-icon>
+          </ion-button>
+        </ion-item>
+
+        @if (mode() === 'register') {
+          <ion-item>
+            <ion-input
+              label="Confirm password"
+              labelPlacement="stacked"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="new-password"
+              [maxlength]="72"
+              [value]="confirm()"
+              (ionInput)="confirm.set($any($event).detail.value ?? '')"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              label="Contact (optional)"
+              labelPlacement="stacked"
+              placeholder="e.g. Messenger: Juan Dela Cruz"
+              [maxlength]="80"
+              [value]="contact()"
+              (ionInput)="contact.set($any($event).detail.value ?? '')"
+            ></ion-input>
+          </ion-item>
+        }
+      </ion-list>
+
+      @if (error(); as msg) {
+        <p class="lg-error" role="alert">{{ msg }}</p>
+      }
+
+      <ion-button expand="block" shape="round" class="lg-submit" [disabled]="busy()" (click)="submit()">
+        @if (busy()) {
+          <ion-spinner name="dots"></ion-spinner>
+        } @else {
+          {{ mode() === 'login' ? 'Log in' : 'Create account' }}
+        }
+      </ion-button>
+
+      @if (mode() === 'register') {
+        <p class="lg-small">Use at least 6 characters. Your password is stored hashed and never shown to anyone.</p>
+      }
+    </div>
+
+    <button class="lg-guest" (click)="guest()">Continue as guest</button>
+    <p class="lg-small lg-guest-note">Guests can explore the map. You need an account to post, update or delete reports.</p>
+  </div>
+</ion-content>

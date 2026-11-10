@@ -3,11 +3,20 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { distanceM, markerState } from './geo';
+import { AuthService } from './auth.service';
 import { LocationService } from './location.service';
 import { Custody, Report, ReportStatus, ReportView } from './report.model';
 import { SAMPLE_REPORTS } from './sample-data';
 
 export type StoredReport = Omit<Report, 'id'>;
+
+/** Thrown when a guest tries to post to the server; the page sends them to log in. */
+export class LoginRequiredError extends Error {
+  constructor() {
+    super('Please log in to post a report.');
+    this.name = 'LoginRequiredError';
+  }
+}
 
 /** Every response from backend/api/reports.php looks like this. */
 interface ApiResponse<T> {
@@ -48,6 +57,7 @@ function writeJson(key: string, value: unknown): void {
 export class ReportService {
   private readonly http = inject(HttpClient);
   private readonly location = inject(LocationService);
+  private readonly auth = inject(AuthService);
   private readonly endpoint = environment.apiUrl ? `${environment.apiUrl.replace(/\/$/, '')}/reports.php` : '';
 
   readonly reports = signal<Report[]>([]);
@@ -57,16 +67,15 @@ export class ReportService {
   readonly offline = signal(!this.endpoint);
   readonly hasServer = !!this.endpoint;
 
-  /**
-   * Reports submitted from this phone. The prototype has no login, so "mine" is
-   * remembered on the device (see Limitations in the concept doc).
-   */
+  /** Offline reports saved on this phone (they have no account attached). */
   private readonly myIds = signal<string[]>(readJson<string[]>(MY_IDS_KEY, []));
 
+  /** "My reports": the ones posted by the logged-in account, plus offline ones made here. */
   readonly mine = computed(() => {
+    const uid = this.auth.user()?.id;
     const ids = new Set(this.myIds());
     return this.reports()
-      .filter((r) => ids.has(r.id))
+      .filter((r) => (uid && r.userId === uid) || (ids.has(r.id) && !r.userId))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   });
 
@@ -109,6 +118,9 @@ export class ReportService {
 
   async add(report: StoredReport): Promise<Report> {
     let saved: Report;
+    if (!this.offline() && !this.auth.loggedIn()) {
+      throw new LoginRequiredError();
+    }
     if (this.offline()) {
       saved = { ...report, id: `local-${Date.now()}` };
       writeJson(LOCAL_KEY, [saved, ...this.localReports()]);

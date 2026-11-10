@@ -1,35 +1,12 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/config.php';
+// Reports API. Reading is open to everyone; creating needs a login, and only the person
+// who posted a report can update or delete it.
 
-date_default_timezone_set('Asia/Manila');
+require_once __DIR__ . '/common.php';
 
-// Development CORS allow-list (same idea as the class students.php example).
-$allowedOrigins = [
-    'http://localhost',          // Android app (Capacitor, androidScheme "http")
-    'https://localhost',         // Android app (Capacitor default scheme)
-    'capacitor://localhost',
-    'ionic://localhost',
-    'http://localhost:4200',     // ng serve
-    'http://localhost:8100',     // ionic serve
-    'http://127.0.0.1:8100',
-];
-
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
-    header('Access-Control-Allow-Origin: ' . $origin);
-    header('Vary: Origin');
-}
-
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-header('Content-Type: application/json; charset=utf-8');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
+send_cors();
 
 const TYPES = ['lost', 'found'];
 const CATEGORIES = ['id', 'bag', 'umbrella', 'gadget', 'tumbler', 'clothing', 'keys', 'other'];
@@ -38,31 +15,23 @@ const STATUSES = ['active', 'recovered'];
 const MAX_PHOTO_CHARS = 700000; // about 500 KB of image; the app sends ~100-200 KB
 
 // Columns returned to the app, renamed to the camelCase names the Angular model uses.
-const SELECT_REPORT = 'SELECT id, type, name, category, description, photo, lat, lng, radius,
+const SELECT_REPORT = 'SELECT id, user_id AS userId, type, name, category, description, photo, lat, lng, radius,
         reporter_name AS reporterName, contact, custody, status,
         occurred_at AS occurredAt, created_at AS createdAt
     FROM reports';
 
-function respond(int $status, array $payload): void
+/** Stop with 403/404 unless the logged-in user posted this report. */
+function require_owner(PDO $pdo, int $reportId, array $user): void
 {
-    http_response_code($status);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
-function read_json_body(): array
-{
-    $raw = file_get_contents('php://input');
-    if ($raw === false || trim($raw) === '') {
-        respond(400, ['success' => false, 'message' => 'Request body is required.']);
+    $stmt = $pdo->prepare('SELECT user_id FROM reports WHERE id = :id');
+    $stmt->execute(['id' => $reportId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        respond(404, ['success' => false, 'message' => 'Report not found.']);
     }
-
-    $decoded = json_decode($raw, true);
-    if (!is_array($decoded)) {
-        respond(400, ['success' => false, 'message' => 'Invalid JSON request body.']);
+    if ((string)$row['user_id'] !== (string)$user['id']) {
+        respond(403, ['success' => false, 'message' => 'You can only change or delete your own reports.']);
     }
-
-    return $decoded;
 }
 
 /** Turns a database row into the JSON shape of the app's Report interface. */
@@ -82,6 +51,7 @@ function to_report(array $row): array
         'createdAt' => (new DateTime($row['createdAt']))->format(DATE_ATOM),
     ];
     // Optional fields are left out when empty, like in the app.
+    if ($row['userId'] !== null) $report['userId'] = (string)$row['userId'];
     if ($row['photo'] !== null) $report['photo'] = $row['photo'];
     if ($row['radius'] !== null) $report['radius'] = (int)$row['radius'];
     if ($row['custody'] !== null) $report['custody'] = $row['custody'];
@@ -189,8 +159,7 @@ function validate_update(array $input): array
 }
 
 try {
-    $pdo = get_db_connection();
-    $pdo->exec("SET time_zone = '+08:00'");
+    $pdo = get_db();
     $method = $_SERVER['REQUEST_METHOD'];
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
@@ -212,12 +181,13 @@ try {
             respond(200, ['success' => true, 'data' => array_map('to_report', $rows)]);
 
         case 'POST':
+            $user = require_user($pdo);
             $report = validate_new_report(read_json_body());
             $stmt = $pdo->prepare(
-                'INSERT INTO reports (type, name, category, description, photo, lat, lng, radius, reporter_name, contact, custody)
-                 VALUES (:type, :name, :category, :description, :photo, :lat, :lng, :radius, :reporter_name, :contact, :custody)'
+                'INSERT INTO reports (user_id, type, name, category, description, photo, lat, lng, radius, reporter_name, contact, custody)
+                 VALUES (:user_id, :type, :name, :category, :description, :photo, :lat, :lng, :radius, :reporter_name, :contact, :custody)'
             );
-            $stmt->execute($report);
+            $stmt->execute($report + ['user_id' => $user['id']]);
 
             $created = find_report($pdo, (int)$pdo->lastInsertId());
             respond(201, ['success' => true, 'message' => 'Report created.', 'data' => $created]);
@@ -226,11 +196,9 @@ try {
             if ($id === null || $id === false) {
                 respond(400, ['success' => false, 'message' => 'Provide a report id in the query string, e.g. ?id=1.']);
             }
+            $user = require_user($pdo);
             $changes = validate_update(read_json_body());
-
-            if (!find_report($pdo, $id)) {
-                respond(404, ['success' => false, 'message' => 'Report not found.']);
-            }
+            require_owner($pdo, $id, $user);
 
             $sets = [];
             foreach (array_keys($changes) as $column) {
@@ -247,13 +215,11 @@ try {
             if ($id === null || $id === false) {
                 respond(400, ['success' => false, 'message' => 'Provide a report id in the query string, e.g. ?id=1.']);
             }
+            $user = require_user($pdo);
+            require_owner($pdo, $id, $user);
 
             $stmt = $pdo->prepare('DELETE FROM reports WHERE id = :id');
             $stmt->execute(['id' => $id]);
-
-            if ($stmt->rowCount() === 0) {
-                respond(404, ['success' => false, 'message' => 'Report not found.']);
-            }
 
             respond(200, ['success' => true, 'message' => 'Report deleted.']);
 

@@ -33,6 +33,8 @@ export interface Report {
   /** Found reports only: who holds the item now. */
   custody?: Custody;
   status: ReportStatus;
+  /** Account that posted it (set by the server; missing for sample/offline reports). */
+  userId?: string;
 }
 
 export interface SurrenderPoint {
