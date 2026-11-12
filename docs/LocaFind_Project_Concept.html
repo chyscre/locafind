@@ -67,7 +67,6 @@
 <section class="cover">
   <h1>LOCAFind</h1>
   <p class="subtitle">A Campus-Based, Location-Enabled Lost and Found Mobile Application</p>
-  <p class="note">Working project title; the group may rename it.</p>
   <p class="label">PROJECT CONCEPT &amp; IMPLEMENTATION PLAN</p>
   <div class="rule"></div>
   <p class="meta">
@@ -208,9 +207,9 @@
   <li>The student walks around campus with the Map open, or searches the Browse list.</li>
   <li>When the radar shows an item near them, the student opens the Nearby panel and walks toward it.</li>
   <li>Inside the perimeter, the phone vibrates and the orb becomes a pin; tapping it shows the full details.</li>
-  <li>The student taps "I found this" or "This is mine" to see the reporter's contact.</li>
-  <li>The owner and finder coordinate the return, or the owner goes to the security post if the item was surrendered.</li>
-  <li>The reporter marks the report Recovered/Closed from their Profile, and it leaves the map.</li>
+  <li>The student taps "I found this" (on a missing item) or "This is mine" (on a found item). A message shows the reporter's name and contact, or tells the owner to claim the item from Campus Security if it was surrendered.</li>
+  <li>The two students contact each other outside the app (for example on Messenger) and arrange the return, or the owner goes to the security post and describes the item to the guard.</li>
+  <li>Once the item is back with its owner, the student who posted the report closes it from their Profile, and it leaves the map. Workflow E explains each step in detail.</li>
 </ol>
 <h3>Workflow D — Surrendering an Item to Campus Security</h3>
 <ol>
@@ -219,6 +218,27 @@
   <li>In the Profile, the student marks the report "Surrendered to Campus Security".</li>
   <li>The owner sees on the report card where to claim the item.</li>
 </ol>
+
+<h3>Workflow E — What Each Button Does</h3>
+<p>The detail card is where a finder and an owner meet. The table below lists exactly what the app does for each button, as implemented in the prototype.</p>
+<table>
+  <thead><tr><th class="w20">The student taps</th><th class="w20">Where</th><th>What the app does</th><th class="w25">What is saved</th></tr></thead>
+  <tbody>
+    <tr><td>A missing-item marker (far or near)</td><td>Map</td><td>Shows a locked card with the category silhouette and the distance: "Get closer to see details."</td><td>Nothing</td></tr>
+    <tr><td>A missing-item marker (inside its perimeter)</td><td>Map</td><td>Shows the full card: photo, name, description, time reported, distance, and perimeter.</td><td>Nothing</td></tr>
+    <tr><td>"I found this"</td><td>Missing-item card</td><td>Opens a message: "Found this item? Reach [reporter] at [contact] to arrange the return." The student contacts the owner outside the app.</td><td>Nothing; the owner is not notified by the app</td></tr>
+    <tr><td>A found-item crate</td><td>Map</td><td>Always shows the full card, including who holds the item now: with the finder or surrendered to Campus Security.</td><td>Nothing</td></tr>
+    <tr><td>"This is mine"</td><td>Found-item card</td><td>Opens a message with the finder's name and contact. If the item was surrendered, it tells the owner to claim it at the surrender point and describe it to the guard.</td><td>Nothing; the finder is not notified by the app</td></tr>
+    <tr><td>"Surrendered"</td><td>Profile (finder's own found report)</td><td>Marks the item as surrendered to Campus Security right away, after the finder hands it to the guard.</td><td>PUT: custody = security</td></tr>
+    <tr><td>"Returned"</td><td>Profile (finder's own found report)</td><td>Asks "Returned to the owner?", then closes the report and removes it from the map.</td><td>PUT: custody = returned, status = recovered</td></tr>
+    <tr><td>"I got it back"</td><td>Profile (owner's own lost report)</td><td>Asks "Got it back?", then closes the report and removes it from the map.</td><td>PUT: status = recovered</td></tr>
+    <tr><td>"Delete"</td><td>Profile (own report)</td><td>Warns that the report is removed for everyone and suggests closing it instead if the item was really returned.</td><td>DELETE: row removed</td></tr>
+  </tbody>
+</table>
+<p><strong>How the two people connect.</strong> The app does not include chat. It shows each reporter's contact (for example "Messenger: Juan Dela Cruz") so the other student can reach them directly. For a missing item, the contact is shown only after the student walks inside its perimeter, so the details are seen by people who are actually near where the item was lost.</p>
+<p><strong>How a case is closed.</strong> Only the student who posted a report can change it, and each report is closed on its own. If both a lost report and a found report exist for the same umbrella, the owner closes the lost report with "I got it back" and the finder closes the found report with "Returned". The app does not link the two reports or wait for both people to confirm; this keeps the prototype simple, and it matches how a return happens in person. A report that is never closed stays on the map until its owner closes or deletes it.</p>
+<p><strong>Proving ownership.</strong> Found-item descriptions stay general, so a claimant has to describe the item in person to the finder or to the guard before receiving it. The app does not verify claims.</p>
+<div class="callout"><p><strong>Testing without the server or off campus.</strong> If the phone cannot reach the XAMPP laptop, the app runs in offline mode with five sample reports on the NEUST map. Choose "Continue as guest", then turn on Profile → Demo mode and tap the map to walk. Missing items unlock when the avatar enters their perimeter, and both "I found this" and "This is mine" work with the sample contacts. Reports posted offline are saved on that phone only.</p></div>
 
 <!-- ======================= 7 ======================= -->
 <h2>7. System Roles and Administration</h2>
@@ -303,67 +323,18 @@
   <li>The XAMPP server runs on the group's laptop: the phone must be on the same Wi-Fi, and the laptop's IP address may change. When the server cannot be reached, the app works in offline mode with sample data.</li>
   <li>Off campus, every marker stays locked; the Browse tab and Demo mode let the instructor test the app anywhere.</li>
   <li>Accounts are not checked against official NEUST records, there is no password reset yet, and the API runs over plain HTTP on the local network (passwords are hashed in the database, but HTTPS hosting is a future improvement).</li>
+  <li>There is no in-app messaging: tapping "I found this" or "This is mine" shows the other person's contact but does not notify them, and the app does not record that anyone tapped it.</li>
+  <li>Lost and found reports for the same item are not linked, and a return is not confirmed by both people; each reporter closes their own report.</li>
   <li>Public item reports should avoid sensitive identifying details that could enable false claims; owners prove ownership in person or with the guard.</li>
   <li>A user who loses their phone may need another device; the app is not a replacement for Find My Device.</li>
   <li>Watching the location uses battery, so it runs only while the Map or Report screen is open.</li>
 </ul>
 
 <!-- ======================= 12 ======================= -->
-<h2>12. Alignment with the Mobile Application Technology Case Study</h2>
-<p>The following mapping is based on the instructor's supplied case-study guidelines.</p>
-<table>
-  <thead><tr><th class="w30">Case-study requirement / criterion</th><th>How LOCAFind addresses it</th></tr></thead>
-  <tbody>
-    <tr><td>Problem identification and relevance (15 points)</td><td>Replaces asking the guards and relying on group chats with one shared, map-based lost-and-found for the NEUST Sumacab campus.</td></tr>
-    <tr><td>Technical implementation and mobile features (25 points)</td><td>Capacitor Camera with preview and retake; Capacitor Geolocation with live tracking; Haptics; Leaflet map tilted in 3D with perimeters, sprites, and a bird's-eye view.</td></tr>
-    <tr><td>Functionality and data handling (20 points)</td><td>Full CRUD (GET, POST, PUT, DELETE) through Angular HttpClient to a PHP + MySQL REST API, with validation, error handling, and an offline fallback.</td></tr>
-    <tr><td>Usability and user experience (15 points)</td><td>Labelled bottom navigation, always-visible legend, locked and unlocked cards, clear form validation, permission and offline messages, and a friendly avatar.</td></tr>
-    <tr><td>Understanding of code and responsible AI use (15 points)</td><td>Explain the perimeter and distance logic, the camera flow, the 3D projection, and the HTTP service; review and test AI-assisted code and disclose AI assistance.</td></tr>
-    <tr><td>Documentation and presentation (10 points)</td><td>A 3–5 page PDF report, an 8–12 minute recorded walkthrough, an installable Android APK, and source code with setup instructions.</td></tr>
-  </tbody>
-</table>
-
-<!-- ======================= 13 ======================= -->
-<h2>13. Basic Testing Plan</h2>
-<table class="plain">
-  <thead><tr><th class="w30">Test</th><th>Expected result</th><th class="w15">Actual result</th><th class="w15">Status</th></tr></thead>
-  <tbody>
-    <tr><td>Submit a lost-item report</td><td>Saves to MySQL and appears as a grey "?" orb with a perimeter on the map and in Browse</td><td></td><td></td></tr>
-    <tr><td>Submit a found-item report with a camera photo</td><td>Preview shows; confirmed report saves and appears as a green crate</td><td></td><td></td></tr>
-    <tr><td>Retake photo</td><td>The preview is discarded and the camera opens again</td><td></td><td></td></tr>
-    <tr><td>Deny camera or location permission</td><td>A clear message appears; the app keeps working</td><td></td><td></td></tr>
-    <tr><td>Adjust a location pin</td><td>The saved location matches the dragged pin</td><td></td><td></td></tr>
-    <tr><td>Walk toward an item</td><td>Marker goes Far, then Near (yellow), then In range (red pin) with vibration and a banner</td><td></td><td></td></tr>
-    <tr><td>Tap a far marker / an in-range marker</td><td>Locked card with silhouette and distance / full details with contact</td><td></td><td></td></tr>
-    <tr><td>Swipe on the map; tap the compass</td><td>Camera turns; compass offers bird's-eye view and face north</td><td></td><td></td></tr>
-    <tr><td>Open the bird's-eye view</td><td>Whole campus with building labels; drag to look around; Back returns</td><td></td><td></td></tr>
-    <tr><td>Choose an avatar and name</td><td>Avatar and portrait update; it faces the direction it walks</td><td></td><td></td></tr>
-    <tr><td>Mark a report recovered</td><td>Status changes in MySQL; report leaves the map; badges update</td><td></td><td></td></tr>
-    <tr><td>Sign up, log out, and log in again</td><td>Account is created; "My reports" come back after logging in, even on another phone</td><td></td><td></td></tr>
-    <tr><td>Log in with a wrong password</td><td>"Wrong student number or password."; no access</td><td></td><td></td></tr>
-    <tr><td>Post as a guest</td><td>The app asks the guest to log in first</td><td></td><td></td></tr>
-    <tr><td>Delete a report</td><td>Confirmation appears; the report disappears from the map, Profile, and MySQL</td><td></td><td></td></tr>
-    <tr><td>Server unreachable</td><td>Offline notice and sample reports; no blank screen</td><td></td><td></td></tr>
-    <tr><td>Demo mode off campus</td><td>Tapping the ground walks the avatar there; unlocks happen on arrival</td><td></td><td></td></tr>
-  </tbody>
-</table>
-<p>The actual results (Pass/Fail/Needs Improvement) should be filled in after the group tests the application on a real phone on campus.</p>
-
-<!-- ======================= 14 ======================= -->
-<h2>14. Suggested Presentation Outline</h2>
-<ol>
-  <li>Introduce the campus lost-and-found problem and the current reliance on guards and informal inquiries.</li>
-  <li>Explain LOCAFind, its intended users, and the Pokémon GO-inspired discovery idea.</li>
-  <li>Walk through reporting a lost item and show its marker and search perimeter on the 3D map.</li>
-  <li>Walk through reporting a found item using the camera and geolocation.</li>
-  <li>Demonstrate walking toward an item until it unlocks, the Nearby panel, the bird's-eye view, and marking a report recovered in the Profile.</li>
-  <li>Explain selected code snippets: the perimeter/distance logic, the camera flow, and the PHP API with HttpClient.</li>
-  <li>Present test results, limitations, future improvements, and the AI usage disclosure.</li>
-</ol>
-
-<!-- ======================= 15 ======================= -->
-<h2>15. Future Improvements</h2>
+<h2>12. Future Improvements</h2>
 <ul>
+  <li>Make the contact tappable, so "I found this" opens Messenger, a call, or an SMS directly.</li>
+  <li>Save a claim when someone taps "I found this" or "This is mine", and show it in the reporter's Profile, so the reporter knows someone responded.</li>
   <li>Notifications when a found report appears near a lost item's last-known location.</li>
   <li>Matching suggestions based on item category, description, time, and distance.</li>
   <li>Password reset and verification of student numbers with the registrar.</li>
@@ -372,8 +343,8 @@
   <li>Hosting the API online with HTTPS so the app works on any network.</li>
 </ul>
 
-<!-- ======================= 16 ======================= -->
-<h2>16. Summary</h2>
+<!-- ======================= 13 ======================= -->
+<h2>13. Summary</h2>
 <p>LOCAFind is a student-driven, campus-based lost-and-found application built around a game-like 3D map of the NEUST Sumacab campus. Students report missing belongings with a last-known location and a search perimeter, and report found belongings with a photo, description, and found location. Other students walk around campus as a cute animal explorer; items stay hidden as faint mystery orbs until the student steps inside an item's perimeter, when the phone vibrates and the full details unlock. Campus security remains part of the existing physical process when an item is surrendered, but guards do not need to operate the app. The project focuses on the core requirements of the Mobile Application Technology case study—Camera, Geolocation, an interactive map, and HttpClient data operations with a PHP and MySQL backend—while keeping the scope small enough to finish, test, and explain.</p>
 
 </body>
